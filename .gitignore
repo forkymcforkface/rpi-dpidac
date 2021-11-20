@@ -11,3 +11,4 @@ built-in.a
 rpi-dpidac.ko
 *.mod*
 *.o
+.push.settings.jsonc
