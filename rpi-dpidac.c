@@ -24,12 +24,12 @@
 #include <drm/drm_print.h>
 #include <drm/drm_probe_helper.h>
 
-// ~ 20 timings line + comments
-#define READ_SIZE_MAX 2048
+// ~ 450 timings line + comments
+#define READ_SIZE_MAX 102400
 #define LINE_SIZE_MAX 256
 
 static char read_buf[READ_SIZE_MAX];
-static const char *timings_path = "/boot/timings.txt";
+static const char *timings_path = "/home/pi/RGB-Pi/data/timings/system.dat";
 
 static struct drm_display_mode *dpidac_display_mode_from_timings(struct drm_connector *connector, const char *line) {
     int ret, hsync, vsync, interlace, ratio;
@@ -278,6 +278,6 @@ static struct platform_driver dpidac_driver = {
 
 module_platform_driver(dpidac_driver);
 
-MODULE_AUTHOR("Hugh Cole-Baker and cpasjuste");
+MODULE_AUTHOR("Hugh Cole-Baker and cpasjuste and rTomas");
 MODULE_DESCRIPTION("Raspberry Pi DPI DAC bridge driver");
 MODULE_LICENSE("GPL");
