@@ -29,7 +29,7 @@
 #define LINE_SIZE_MAX 256
 
 static char read_buf[READ_SIZE_MAX];
-static const char *timings_path = "/home/pi/RGB-Pi/data/timings/system.dat";
+static const char *timings_path = "/home/pi/RGB-Pi/data/timings.dat";
 
 static struct drm_display_mode *dpidac_display_mode_from_timings(struct drm_connector *connector, const char *line) {
     int ret, hsync, vsync, interlace, ratio;
