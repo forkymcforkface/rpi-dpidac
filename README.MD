@@ -11,32 +11,32 @@ Both the overlay and the bridge were tested in the following environment:
 # Build instructions
 
 1. Install Kernel Headers
-`apt install raspberrypi-kernel-headers`
+```apt install raspberrypi-kernel-headers```
 2. Compile the overlay and kernel module
-`make`
+```make```
 3. Install the overlay and kernel module
-`make install`
+```make install```
 4. Manually add the overlay to /boot/config.txt
-`dtoverlay=vc4-kms-dpi-custom`
+```dtoverlay=vc4-kms-dpi-custom```
 5. Manually add the kernel module to /etc/modules-load.d/modules.conf
-`rpi-dpidac`
+```rpi-dpidac```
+6. Optionally you can create a /opt/timings.txt file with your custom timings
 
-6. Optionally you can create a /boot/timings.txt file with your custom timings
-NOTE: default /boot/timings.txt path is not mounted when module tries to read the same, so moved to /opt/timings.txt
+**NOTE**: default /boot/timings.txt path is not mounted when module tries to read the same, so moved to /opt/timings.txt
 
 ## Misc
 
 * Check if kernel module is loaded
-`lsmod | grep rpi_dpidac`
+```lsmod | grep rpi_dpidac```
 * Display module info
-`modinfo rpi-dpidac`
+```modinfo rpi-dpidac```
 * Load module manually
-`modprobe rpi-dpidac`
+```modprobe rpi-dpidac```
 or
-`insmod /usr/lib/modules/$(uname -r)/extra/rpi-dpidac.ko.xz`
+```insmod /usr/lib/modules/$(uname -r)/extra/rpi-dpidac.ko.xz```
 * Unload module manually
-`modprobe -r rpi-dpidac`
+```modprobe -r rpi-dpidac```
 * Get kernel bridge message status
-`less /var/log/messages | grep RPI-DPIDAC`
+```less /var/log/messages | grep RPI-DPIDAC```
 or
-`dmesg | grep RPI-DPIDAC`
+```dmesg | grep RPI-DPIDAC```
