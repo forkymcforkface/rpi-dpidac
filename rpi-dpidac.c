@@ -2,6 +2,8 @@
  * Copyright (C) 2018 Hugh Cole-Baker
  *
  * Hugh Cole-Baker <sigmaris@gmail.com>
+ *  * cpasjuste
+ * rTomas (RTA) <ruben.tomas.alonso@gmail.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -25,12 +27,83 @@
 #include <drm/drm_probe_helper.h>
 #include <drm/drm_edid.h>
 
-// ~ 450 timings line + comments
-#define READ_SIZE_MAX 102400
+// ~ 20 timings line + comments
+#define READ_SIZE_MAX 2048
 #define LINE_SIZE_MAX 256
 
 static char read_buf[READ_SIZE_MAX];
 static const char *timings_path = "/opt/timings.txt";
+
+struct dpidac {
+    struct drm_bridge bridge;
+    struct drm_connector connector;
+    struct display_timings *timings;
+};
+
+enum ModeIds {
+  p320x240 = 0,
+  p1920x240,
+  i640x480,
+  p640x480,
+  ModeCount,
+};
+
+static struct videomode modes[ModeCount] = {
+
+    // 240p@60 : 320 1 4 30 46 240 1 4 5 14 0 0 0 60 0 6400000 1
+    {
+        .pixelclock = 6400000,
+        .hactive = 320,
+        .hfront_porch = 4,
+        .hsync_len = 30,
+        .hback_porch = 46,
+        .vactive = 240,
+        .vfront_porch = 4,
+        .vsync_len = 5,
+        .vback_porch = 14,
+        .flags = DISPLAY_FLAGS_VSYNC_LOW | DISPLAY_FLAGS_HSYNC_LOW
+    },
+    // 1920x240p@60 : 1920 1 80 184 312 240 1 1 3 16 0 0 0 60 0 38937600 1
+    {
+        .pixelclock = 38937600,
+        .hactive = 1920,
+        .hfront_porch = 80,
+        .hsync_len = 184,
+        .hback_porch = 312,
+        .vactive = 240,
+        .vfront_porch = 1,
+        .vsync_len = 3,
+        .vback_porch = 16,
+        .flags = DISPLAY_FLAGS_VSYNC_LOW | DISPLAY_FLAGS_HSYNC_LOW
+    },
+
+    // 480i@60 : 640 1 24 64 104 480 1 3 6 34 0 0 0 60 1 13054080 1
+   {
+      .pixelclock = 13054080,
+      .hactive = 640,
+      .hfront_porch = 24,
+      .hsync_len = 64,
+      .hback_porch = 104,
+      .vactive = 480,
+      .vfront_porch = 3,
+      .vsync_len = 6,
+      .vback_porch = 34,
+      .flags = DISPLAY_FLAGS_VSYNC_LOW | DISPLAY_FLAGS_HSYNC_LOW | DISPLAY_FLAGS_INTERLACED
+    },
+    // 480p@60 : 640 1 24 96 48 480 1 11 2 32 0 0 0 60 0 25452000 1
+    {
+      .pixelclock = 25452000,
+      .hactive = 640,
+      .hfront_porch = 24,
+      .hsync_len = 96,
+      .hback_porch = 48,
+      .vactive = 480,
+      .vfront_porch = 11,
+      .vsync_len = 2,
+      .vback_porch = 32,
+      .flags = DISPLAY_FLAGS_VSYNC_LOW | DISPLAY_FLAGS_HSYNC_LOW
+    }
+};
 
 static struct drm_display_mode *dpidac_display_mode_from_timings(struct drm_connector *connector, const char *line) {
     int ret, hsync, vsync, interlace, ratio;
@@ -78,16 +151,18 @@ int dpidac_load_timings(struct drm_connector *connector) {
     struct drm_display_mode *mode = NULL;
     int mode_count = 0;
 
+    printk(KERN_INFO "[RPI-DPIDAC]: loading timings from file...\n");
+
     fp = filp_open(timings_path, O_RDONLY, 0);
     if (IS_ERR(fp) || !fp) {
-        printk(KERN_WARNING "[RPI-DPIDAC]: timings file not found, skipping custom modes loading\n");
+        printk(KERN_WARNING "[RPI-DPIDAC]: timings file not found, skipping custom modes loading...\n");
         return 0;
     }
 
     read_size = kernel_read(fp, &read_buf, READ_SIZE_MAX, &fp->f_pos);
     if (read_size <= 0) {
         filp_close(fp, NULL);
-        printk(KERN_WARNING "[RPI-DPIDAC]: empty timings file found, skipping custom modes loading\n");
+        printk(KERN_WARNING "[RPI-DPIDAC]: empty timings file found, skipping custom modes loading...\n");
         return 0;
     }
     filp_close(fp, NULL);
@@ -111,14 +186,10 @@ int dpidac_load_timings(struct drm_connector *connector) {
         }
     }
 
+    printk(KERN_INFO "[RPI-DPIDAC]: %i custom modes loaded\n", mode_count);
+
     return mode_count;
 }
-
-struct dpidac {
-    struct drm_bridge bridge;
-    struct drm_connector connector;
-    struct display_timings *timings;
-};
 
 static inline struct dpidac *drm_bridge_to_dpidac(struct drm_bridge *bridge) {
     return container_of(bridge, struct dpidac, bridge);
@@ -128,44 +199,51 @@ static inline struct dpidac *drm_connector_to_dpidac(struct drm_connector *conne
     return container_of(connector, struct dpidac, connector);
 }
 
-static int dpidac_get_modes(struct drm_connector *connector) {
+static int dpidac_apply_module_mode(struct drm_connector *connector, int modeId, bool preferred) {
     struct drm_device *dev = connector->dev;
-    struct dpidac *vga = drm_connector_to_dpidac(connector);
-    struct display_timings *timings = vga->timings;
-    int i;
+    struct drm_display_mode *mode = drm_mode_create(dev);
+    struct videomode vmcopy;
+    struct videomode *vm = &modes[modeId];
+    vmcopy.vback_porch = vm->vback_porch;
+    vmcopy.vfront_porch = vm->vfront_porch;
+    vmcopy.hback_porch = vm->hback_porch;
+    vmcopy.hfront_porch = vm->hfront_porch;
+    vmcopy.flags = vm->flags;
+    vmcopy.hactive = vm->hactive;
+    vmcopy.hsync_len = vm->hsync_len;
+    vmcopy.pixelclock = vm->pixelclock;
+    vmcopy.vactive = vm->vactive;
+    vmcopy.vsync_len = vm->vsync_len;
 
-    i = dpidac_load_timings(connector);
-    if (i) {
-        printk(KERN_INFO "[RPI-DPIDAC]: dpidac_get_modes: %i custom modes loaded\n", i);
-        return i;
-    } else if (timings) {
-        for (i = 0; i < timings->num_timings; i++) {
-            struct drm_display_mode *mode = drm_mode_create(dev);
-            struct videomode vm;
+    drm_display_mode_from_videomode(&vmcopy, mode);
+    mode->type = DRM_MODE_TYPE_DRIVER;
+    if (preferred)
+        mode->type |= DRM_MODE_TYPE_PREFERRED;
 
-            if (videomode_from_timings(timings, &vm, i))
-                break;
+    //mode->flags |= (DRM_MODE_FLAG_CSYNC | DRM_MODE_FLAG_NCSYNC);
 
-            drm_display_mode_from_videomode(&vm, mode);
+    drm_mode_set_name(mode);
+    printk(KERN_INFO "[RPI-DPIDAC]: \t" DRM_MODE_FMT, DRM_MODE_ARG(mode));
+    drm_mode_probed_add(connector, mode);
 
-            mode->type = DRM_MODE_TYPE_DRIVER;
+    return 1;
+}
 
-            if (timings->native_mode == i)
-                mode->type |= DRM_MODE_TYPE_PREFERRED;
+static int dpidac_get_modes(struct drm_connector *connector) {
+    int mode_count = 0;
 
-            drm_mode_set_name(mode);
-            drm_mode_probed_add(connector, mode);
-        }
-        printk(KERN_INFO "[RPI-DPIDAC]: dpidac_get_modes: %i modes loaded from dtb overlay\n", i);
-    } else {
-        /* Since there is no timing data, use XGA standard modes */
-        i = drm_add_modes_noedid(connector, 1920, 1200);
-        /* And prefer a mode pretty much anyone can handle */
-        drm_set_preferred_mode(connector, 1024, 768);
-        printk(KERN_INFO "[RPI-DPIDAC]: dpidac_get_modes: fallback to XGA mode...\n");
+    mode_count = dpidac_load_timings(connector);
+
+    if (!mode_count) {
+        printk(KERN_INFO "[RPI-DPIDAC]: Loading timings from bridge...\n");
+        mode_count += dpidac_apply_module_mode(connector, p320x240, true);
+        mode_count += dpidac_apply_module_mode(connector, p1920x240, false);
+        mode_count += dpidac_apply_module_mode(connector, i640x480, false);
+        mode_count += dpidac_apply_module_mode(connector, p640x480, false);
+        printk(KERN_INFO "[RPI-DPIDAC]: %i default modes loaded\n", mode_count);
     }
 
-    return i;
+    return mode_count;
 }
 
 static const struct drm_connector_helper_funcs dpidac_con_helper_funcs = {
@@ -177,18 +255,17 @@ static enum drm_connector_status dpidac_connector_detect(struct drm_connector *c
 }
 
 static const struct drm_connector_funcs dpidac_con_funcs = {
-        .detect            = dpidac_connector_detect,
-        .fill_modes        = drm_helper_probe_single_connector_modes,
-        .destroy        = drm_connector_cleanup,
+        .detect           = dpidac_connector_detect,
+        .fill_modes       = drm_helper_probe_single_connector_modes,
+        .destroy          = drm_connector_cleanup,
         .reset            = drm_atomic_helper_connector_reset,
-        .atomic_duplicate_state    = drm_atomic_helper_connector_duplicate_state,
-        .atomic_destroy_state    = drm_atomic_helper_connector_destroy_state,
+        .atomic_duplicate_state = drm_atomic_helper_connector_duplicate_state,
+        .atomic_destroy_state   = drm_atomic_helper_connector_destroy_state,
 };
 
 static int dpidac_attach(struct drm_bridge *bridge, enum drm_bridge_attach_flags flags) {
-    struct dpidac *vga = drm_bridge_to_dpidac(bridge);
+    struct dpidac *dpi = drm_bridge_to_dpidac(bridge);
     u32 bus_format = MEDIA_BUS_FMT_RGB666_1X24_CPADHI;
-    u32 mode;
     int ret;
 
     if (!bridge->encoder) {
@@ -196,29 +273,26 @@ static int dpidac_attach(struct drm_bridge *bridge, enum drm_bridge_attach_flags
         return -ENODEV;
     }
 
-    drm_connector_helper_add(&vga->connector,
+    drm_connector_helper_add(&dpi->connector,
                              &dpidac_con_helper_funcs);
-    ret = drm_connector_init(bridge->dev, &vga->connector,
+    ret = drm_connector_init(bridge->dev, &dpi->connector,
                              &dpidac_con_funcs, DRM_MODE_CONNECTOR_VGA);
     if (ret) {
         DRM_ERROR("Failed to initialize connector\n");
         return ret;
     }
 
-    of_property_read_u32(vga->bridge.of_node, "vc4-dpi-mode", &mode);
-    printk(KERN_INFO "[RPI-DPIDAC]: vc4-dpi-mode: %i\n", mode);
-
-    ret = drm_display_info_set_bus_formats(&vga->connector.display_info,
+    ret = drm_display_info_set_bus_formats(&dpi->connector.display_info,
                                            &bus_format, 1);
     if (ret) {
         DRM_ERROR("Failed to set bus format\n");
         return ret;
     }
 
-    vga->connector.interlace_allowed = 1;
-    vga->connector.doublescan_allowed = 1;
+    dpi->connector.interlace_allowed = 1;
+    dpi->connector.doublescan_allowed = 1;
 
-    drm_connector_attach_encoder(&vga->connector,
+    drm_connector_attach_encoder(&dpi->connector,
                                  bridge->encoder);
 
     return 0;
@@ -229,32 +303,28 @@ static const struct drm_bridge_funcs dpidac_bridge_funcs = {
 };
 
 static int dpidac_probe(struct platform_device *pdev) {
-    struct dpidac *vga;
+    struct dpidac *dpi;
 
-    vga = devm_kzalloc(&pdev->dev, sizeof(*vga), GFP_KERNEL);
-    if (!vga)
+    dpi = devm_kzalloc(&pdev->dev, sizeof(*dpi), GFP_KERNEL);
+    if (!dpi)
         return -ENOMEM;
-    platform_set_drvdata(pdev, vga);
+    platform_set_drvdata(pdev, dpi);
 
-    vga->timings = of_get_display_timings(pdev->dev.of_node);
-    printk(KERN_INFO "[RPI-DPIDAC]: display-timings from DT: %p\n", vga->timings);
+    dpi->bridge.funcs = &dpidac_bridge_funcs;
+    dpi->bridge.of_node = pdev->dev.of_node;
 
-    vga->bridge.funcs = &dpidac_bridge_funcs;
-    vga->bridge.of_node = pdev->dev.of_node;
+    drm_bridge_add(&dpi->bridge);
 
-    drm_bridge_add(&vga->bridge);
+    printk(KERN_INFO "[RPI-DPIDAC]: module probed\n");
 
     return 0;
 }
 
 static int dpidac_remove(struct platform_device *pdev) {
-    struct dpidac *vga = platform_get_drvdata(pdev);
+    struct dpidac *dpi = platform_get_drvdata(pdev);
+    drm_bridge_remove(&dpi->bridge);
 
-    if (vga->timings) {
-        display_timings_release(vga->timings);
-    }
-
-    drm_bridge_remove(&vga->bridge);
+    printk(KERN_INFO "[RPI-DPIDAC]: module removed\n");
 
     return 0;
 }
@@ -269,13 +339,13 @@ static struct platform_driver dpidac_driver = {
         .probe  = dpidac_probe,
         .remove = dpidac_remove,
         .driver = {
-                .name        = "rpi-dpidac",
-                .of_match_table    = dpidac_match,
+                .name           = "rpi-dpidac",
+                .of_match_table = dpidac_match,
         },
 };
 
 module_platform_driver(dpidac_driver);
 
-MODULE_AUTHOR("Hugh Cole-Baker and cpasjuste and rTomas");
+MODULE_AUTHOR("Hugh Cole-Baker and cpasjuste and rTomas (RTA)");
 MODULE_DESCRIPTION("Raspberry Pi DPI DAC bridge driver");
 MODULE_LICENSE("GPL");

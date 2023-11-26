@@ -12,55 +12,6 @@
 				#address-cells = <1>;
 				#size-cells = <0>;
 
-				vc4-dpi-mode = <6>;
-
-				display-timings {
-					native-mode = <&p240_60>;
-
-					p240_60: p240_60 {
-						clock-frequency = <6400000>;
-						hactive = <320>;
-						hfront-porch = <17>;
-						hsync-len = <30>;
-						hsync-active = <0>;
-						hback-porch = <34>;
-						vactive = <240>;
-						vfront-porch = <1>;
-						vsync-len = <3>;
-						vsync-active = <0>;
-						vback-porch = <22>;
-					};
-					
-					i480_60: i480_60 {
-						clock-frequency = <12800000>;
-						interlaced;
-						hactive = <640>;
-						hfront-porch = <30>;
-						hsync-len = <60>;
-						hsync-active = <0>;
-						hback-porch = <72>;
-						vactive = <480>;
-						vfront-porch = <22>;
-						vsync-len = <5>;
-						vsync-active = <0>;
-						vback-porch = <24>;
-					};
-					
-					p480_60: p480_60 {
-						clock-frequency = <25180000>;
-						hactive = <640>;
-						hfront-porch = <16>;
-						hsync-len = <96>;
-						hsync-active = <0>;
-						hback-porch = <48>;
-						vactive = <480>;
-						vfront-porch = <10>;
-						vsync-len = <2>;
-						vsync-active = <0>;
-						vback-porch = <33>;
-					};
-				};
-
 				ports {
 					#address-cells = <1>;
 					#size-cells = <0>;
