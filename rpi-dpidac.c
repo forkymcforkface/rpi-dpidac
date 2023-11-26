@@ -15,7 +15,7 @@
 #include <video/display_timing.h>
 #include <video/of_display_timing.h>
 #include <video/videomode.h>
-
+#include <uapi/linux/media-bus-format.h>
 #include <drm/drm_atomic_helper.h>
 #include <drm/drm_bridge.h>
 #include <drm/drm_crtc.h>
@@ -23,13 +23,14 @@
 #include <drm/drm_mipi_dsi.h>
 #include <drm/drm_print.h>
 #include <drm/drm_probe_helper.h>
+#include <drm/drm_edid.h>
 
 // ~ 450 timings line + comments
 #define READ_SIZE_MAX 102400
 #define LINE_SIZE_MAX 256
 
 static char read_buf[READ_SIZE_MAX];
-static const char *timings_path = "/home/pi/RGB-Pi/data/timings.dat";
+static const char *timings_path = "/opt/timings.txt";
 
 static struct drm_display_mode *dpidac_display_mode_from_timings(struct drm_connector *connector, const char *line) {
     int ret, hsync, vsync, interlace, ratio;
@@ -99,7 +100,7 @@ int dpidac_load_timings(struct drm_connector *connector) {
                 line[line_len - 1] = '\0';
                 if ((mode = dpidac_display_mode_from_timings(connector, line)) != NULL) {
                     mode->type = mode_count ? DRM_MODE_TYPE_DRIVER : DRM_MODE_TYPE_DRIVER | DRM_MODE_TYPE_PREFERRED;
-                    //printk(KERN_INFO "[RPI-DPIDAC]: \t" DRM_MODE_FMT, DRM_MODE_ARG(mode));
+                    printk(KERN_INFO "[RPI-DPIDAC]: \t" DRM_MODE_FMT, DRM_MODE_ARG(mode));
                     drm_mode_probed_add(connector, mode);
                     mode_count++;
                 }
@@ -135,7 +136,7 @@ static int dpidac_get_modes(struct drm_connector *connector) {
 
     i = dpidac_load_timings(connector);
     if (i) {
-        //printk(KERN_INFO "[RPI-DPIDAC]: dpidac_get_modes: %i custom modes loaded\n", i);
+        printk(KERN_INFO "[RPI-DPIDAC]: dpidac_get_modes: %i custom modes loaded\n", i);
         return i;
     } else if (timings) {
         for (i = 0; i < timings->num_timings; i++) {
@@ -155,13 +156,13 @@ static int dpidac_get_modes(struct drm_connector *connector) {
             drm_mode_set_name(mode);
             drm_mode_probed_add(connector, mode);
         }
-        //printk(KERN_INFO "[RPI-DPIDAC]: dpidac_get_modes: %i modes loaded from dtb overlay\n", i);
+        printk(KERN_INFO "[RPI-DPIDAC]: dpidac_get_modes: %i modes loaded from dtb overlay\n", i);
     } else {
         /* Since there is no timing data, use XGA standard modes */
         i = drm_add_modes_noedid(connector, 1920, 1200);
         /* And prefer a mode pretty much anyone can handle */
         drm_set_preferred_mode(connector, 1024, 768);
-        //printk(KERN_INFO "[RPI-DPIDAC]: dpidac_get_modes: fallback to XGA mode...\n");
+        printk(KERN_INFO "[RPI-DPIDAC]: dpidac_get_modes: fallback to XGA mode...\n");
     }
 
     return i;
@@ -186,7 +187,7 @@ static const struct drm_connector_funcs dpidac_con_funcs = {
 
 static int dpidac_attach(struct drm_bridge *bridge, enum drm_bridge_attach_flags flags) {
     struct dpidac *vga = drm_bridge_to_dpidac(bridge);
-    u32 bus_format = MEDIA_BUS_FMT_RGB666_1X18;
+    u32 bus_format = MEDIA_BUS_FMT_RGB666_1X24_CPADHI;
     u32 mode;
     int ret;
 
@@ -204,11 +205,8 @@ static int dpidac_attach(struct drm_bridge *bridge, enum drm_bridge_attach_flags
         return ret;
     }
 
-    of_property_read_u32(vga->bridge.of_node, "vc4-vga666-mode", &mode);
-    printk(KERN_INFO "[RPI-DPIDAC]: vc4-vga666 mode: %i\n", mode);
-    if(mode == 6) {
-        bus_format = MEDIA_BUS_FMT_RGB666_1X24_CPADHI;
-    }
+    of_property_read_u32(vga->bridge.of_node, "vc4-dpi-mode", &mode);
+    printk(KERN_INFO "[RPI-DPIDAC]: vc4-dpi-mode: %i\n", mode);
 
     ret = drm_display_info_set_bus_formats(&vga->connector.display_info,
                                            &bus_format, 1);

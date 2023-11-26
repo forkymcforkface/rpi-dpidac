@@ -3,20 +3,29 @@ ifneq (${KERNELRELEASE},)
 else
 	KERNELDIR        ?= /lib/modules/$(shell uname -r)/build
 	MODULE_DIR       ?= $(shell pwd)
-	ARCH             ?= $(shell uname -i)
-	CROSS_COMPILE    ?=
-	INSTALL_MOD_PATH ?= /
+	ARCH             ?= arm64
+	INSTALL_MOD_PATH ?=
 endif
 
-all: modules
+all:
+	${MAKE} ARCH="${ARCH}" -C ${KERNELDIR} M="${MODULE_DIR}" modules
+	dtc -@ -O dtb -o vc4-kms-dpi-custom.dtbo vc4-kms-dpi-custom.dts
 
-modules:
-	${MAKE} ARCH="${ARCH}" CROSS_COMPILE="${CROSS_COMPILE}" -C ${KERNELDIR} SUBDIRS="${MODULE_DIR}"  modules
+install:
+	${MAKE} ARCH="${ARCH}" INSTALL_MOD_PATH="${INSTALL_MOD_PATH}" -C ${KERNELDIR} M="${MODULE_DIR}" modules_install
+	depmod
+	cp vc4-kms-dpi-custom.dtbo /boot/overlays
 
-modules_install:
-	${MAKE} ARCH="${ARCH}" CROSS_COMPILE="${CROSS_COMPILE}" INSTALL_MOD_PATH="${INSTALL_MOD_PATH}" -C ${KERNELDIR} SUBDIRS="${MODULE_DIR}"  modules_install
+uninstall:
+	rm -f ${INSTALL_MOD_PATH}/lib/modules/$(shell uname -r)/extra/rpi-dpidac.ko*
+	depmod
+	@if [ -f /boot/overlays/vc4-kms-dpi-custom.dtbo ]; then \
+		rm /boot/overlays/vc4-kms-dpi-custom.dtbo; \
+	fi
 
 clean:
-	rm -f *.o *.ko *.mod.c .*.o .*.ko .*.mod.c *.mod .*.cmd *~
-	rm -f Module.symvers Module.markers modules.order
-	rm -rf .tmp_versions
+	${MAKE} -C ${KERNELDIR} M="${MODULE_DIR}" clean
+	@if [ -f vc4-kms-dpi-custom.dtbo ]; then \
+		rm vc4-kms-dpi-custom.dtbo; \
+	fi
+
