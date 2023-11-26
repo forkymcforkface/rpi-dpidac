@@ -20,9 +20,7 @@ Both the overlay and the bridge were tested in the following environment:
 ```dtoverlay=vc4-kms-dpi-custom```
 5. Manually add the kernel module to /etc/modules-load.d/modules.conf
 ```rpi-dpidac```
-6. Optionally you can create a /opt/timings.txt file with your custom timings
-
-**NOTE**: default /boot/timings.txt path is not mounted when module tries to read the same, so moved to /opt/timings.txt
+6. Optionally you can modify /boot/timings.txt file with your custom timings
 
 ## Misc
 
