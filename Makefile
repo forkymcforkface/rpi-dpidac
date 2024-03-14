@@ -14,7 +14,7 @@ all:
 install:
 	${MAKE} ARCH="${ARCH}" INSTALL_MOD_PATH="${INSTALL_MOD_PATH}" -C ${KERNELDIR} M="${MODULE_DIR}" modules_install
 	depmod
-	cp vc4-kms-dpi-custom.dtbo /boot/overlays
+	cp vc4-kms-dpi-custom.dtbo /boot/overlays/firmware
 	@if [ -f timings.txt ]; then \
 		echo "cp timings.txt /boot"; \
 		cp timings.txt /boot; \
@@ -23,13 +23,13 @@ install:
 uninstall:
 	rm -f ${INSTALL_MOD_PATH}/lib/modules/$(shell uname -r)/extra/rpi-dpidac.ko*
 	depmod
-	@if [ -f /boot/overlays/vc4-kms-dpi-custom.dtbo ]; then \
-		echo "rm /boot/overlays/vc4-kms-dpi-custom.dtbo"; \
-		rm /boot/overlays/vc4-kms-dpi-custom.dtbo; \
+	@if [ -f /boot/overlays/firmware/vc4-kms-dpi-custom.dtbo ]; then \
+		echo "rm /boot/overlays/firmware/vc4-kms-dpi-custom.dtbo"; \
+		rm /boot/overlays/firmware/vc4-kms-dpi-custom.dtbo; \
 	fi
-	@if [ -f /boot/timings.txt ]; then \
-		echo "rm /boot/timings.txt"; \
-		rm /boot/timings.txt; \
+	@if [ -f /boot/firmware/timings.txt ]; then \
+		echo "rm /boot/firmware/timings.txt"; \
+		rm /boot/firmware/timings.txt; \
 	fi
 
 clean:

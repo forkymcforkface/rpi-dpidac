@@ -32,7 +32,7 @@
 #define LINE_SIZE_MAX 256
 
 static char read_buf[READ_SIZE_MAX];
-static const char *timings_path = "/boot/timings.txt";
+static const char *timings_path = "/boot/firmware/timings.txt";
 
 struct dpidac {
     struct drm_bridge bridge;
@@ -78,7 +78,7 @@ static struct videomode modes[ModeCount] = {
     },
 
     // 480i@60 : 640 1 24 64 104 480 1 3 6 34 0 0 0 60 1 13054080 1
-   {
+    {
       .pixelclock = 13054080,
       .hactive = 640,
       .hfront_porch = 24,
