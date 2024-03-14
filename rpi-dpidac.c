@@ -13,6 +13,7 @@
 
 #include <linux/module.h>
 #include <linux/platform_device.h>
+#include <linux/of.h>
 
 #include <video/display_timing.h>
 #include <video/of_display_timing.h>
