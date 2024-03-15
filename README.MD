@@ -3,8 +3,9 @@
 Both the overlay and the bridge were tested in the following environment:
 * Raspberry Pi OS Lite
 * Release date: October 10th 2023
+* Last updated: March 15th 2024
 * System: 64-bit
-* Kernel version: 6.1
+* Kernel version: 6.6
 * Debian version: 12 (bookworm)
 * Raspberry Pi: models 3B/B+, 4B and 5B
 
@@ -16,7 +17,7 @@ Both the overlay and the bridge were tested in the following environment:
 ```make```
 3. Install the overlay and kernel module
 ```make install```
-4. Manually add the overlay to /boot/config.txt
+4. Manually add the overlay to /boot/firmware/config.txt
 ```dtoverlay=vc4-kms-dpi-custom```
 5. Manually add the kernel module to /etc/modules-load.d/modules.conf
 ```rpi-dpidac```
