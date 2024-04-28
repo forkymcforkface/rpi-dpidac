@@ -33,7 +33,7 @@
 #define LINE_SIZE_MAX 256
 
 static char read_buf[READ_SIZE_MAX];
-static const char *timings_path = "/boot/firmware/timings.txt";
+static const char *timings_path = "/opt/rgbpi/ui/data/timings.dat";
 
 struct dpidac {
     struct drm_bridge bridge;
