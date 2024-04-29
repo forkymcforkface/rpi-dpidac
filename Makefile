@@ -19,7 +19,10 @@ install:
 		echo "cp timings.txt /boot/firmware"; \
 		cp timings.txt /boot/firmware; \
 	fi
-	
+	@if ! grep -q "rpi-dpidac" /etc/modules-load.d/modules.conf; then \
+		echo "rpi-dpidac" | sudo tee -a /etc/modules-load.d/modules.conf; \
+	fi
+	@modprobe rpi-dpidac
 uninstall:
 	rm -f ${INSTALL_MOD_PATH}/lib/modules/$(shell uname -r)/extra/rpi-dpidac.ko*
 	depmod
