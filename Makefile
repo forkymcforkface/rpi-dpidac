@@ -19,6 +19,7 @@ install:
 		echo "cp timings.txt /boot/firmware"; \
 		cp timings.txt /boot/firmware; \
 	fi
+	@echo "dtoverlay=vc4-kms-dpi-custom" | sudo tee -a /boot/firmware/config.txt
 	@if ! grep -q "rpi-dpidac" /etc/modules-load.d/modules.conf; then \
 		echo "rpi-dpidac" | sudo tee -a /etc/modules-load.d/modules.conf; \
 	fi
