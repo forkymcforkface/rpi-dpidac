@@ -1,11 +1,16 @@
 ifneq (${KERNELRELEASE},)
-	obj-m += rpi-dpidac.o
+    obj-m += rpi-dpidac.o
 else
-	KERNELDIR        ?= /lib/modules/$(shell uname -r)/build
-	MODULE_DIR       ?= $(shell pwd)
-	ARCH             ?= arm64
-	INSTALL_MOD_PATH ?=
+    KERNELDIR        ?= /lib/modules/$(shell uname -r)/build
+    MODULE_DIR       ?= $(shell pwd)
+    ifeq ($(shell dpkg-architecture -qDEB_HOST_ARCH),arm64)
+        ARCH         ?= arm64
+    else
+        ARCH         ?= arm
+    endif
+    INSTALL_MOD_PATH ?=
 endif
+
 
 all:
 	${MAKE} ARCH="${ARCH}" -C ${KERNELDIR} M="${MODULE_DIR}" modules
