@@ -3,7 +3,11 @@ ifneq (${KERNELRELEASE},)
 else
 	KERNELDIR        ?= /lib/modules/$(shell uname -r)/build
 	MODULE_DIR       ?= $(shell pwd)
-	ARCH             ?= arm64
+	ifeq ($(shell dpkg-architecture -qDEB_HOST_ARCH),arm64)
+		ARCH         ?= arm64
+	else
+		ARCH         ?= arm
+	endif
 	INSTALL_MOD_PATH ?=
 endif
 
@@ -24,6 +28,7 @@ install:
 		echo "rpi-dpidac" | sudo tee -a /etc/modules-load.d/modules.conf; \
 	fi
 	@modprobe rpi-dpidac
+
 uninstall:
 	rm -f ${INSTALL_MOD_PATH}/lib/modules/$(shell uname -r)/extra/rpi-dpidac.ko*
 	depmod
