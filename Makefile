@@ -19,9 +19,6 @@ install:
 	${MAKE} ARCH="${ARCH}" INSTALL_MOD_PATH="${INSTALL_MOD_PATH}" -C ${KERNELDIR} M="${MODULE_DIR}" modules_install
 	depmod
 	cp vc4-kms-dpi-custom.dtbo /boot/firmware/overlays
-	@if [ -f timings.txt ]; then \
-		echo "cp timings.txt /boot/firmware"; \
-		cp timings.txt /boot/firmware; \
 	fi
 	@echo "dtoverlay=vc4-kms-dpi-custom" | sudo tee -a /boot/firmware/config.txt
 	@if ! grep -q "rpi-dpidac" /etc/modules-load.d/modules.conf; then \
