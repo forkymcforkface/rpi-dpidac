@@ -12,7 +12,7 @@ Both the overlay and the bridge were tested in the following environment:
 # Build instructions
 
 1. Clone Repo
-```git clone https://github.com/forkymcforkface/rpi-dpidac```
+```git clone https://github.com/forkymcforkface/rpi-dpidac && cd rpi-dpidac```
 2. Install Kernel Headers
 ```apt install raspberrypi-kernel-headers```
 3. Compile the overlay and kernel module
