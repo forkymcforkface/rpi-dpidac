@@ -50,18 +50,18 @@ enum ModeIds {
 };
 
 static struct videomode modes[ModeCount] = {
-
-    // 240p@60 : 320 1 4 30 46 240 1 4 5 14 0 0 0 60 0 6400000 1
+                 
+    // 240p@60 : 320 1 13 30 37 240 1 6 5 12 0 0 0 60 0 6400000 1
     {
         .pixelclock = 6400000,
         .hactive = 320,
-        .hfront_porch = 4,
+        .hfront_porch = 13,
         .hsync_len = 30,
-        .hback_porch = 46,
+        .hback_porch = 37,
         .vactive = 240,
-        .vfront_porch = 4,
+        .vfront_porch = 6,
         .vsync_len = 5,
-        .vback_porch = 14,
+        .vback_porch = 12,
         .flags = DISPLAY_FLAGS_VSYNC_LOW | DISPLAY_FLAGS_HSYNC_LOW
     },
     // 1920x240p@60 : 1920 1 80 184 312 240 1 1 3 16 0 0 0 60 0 38937600 1
