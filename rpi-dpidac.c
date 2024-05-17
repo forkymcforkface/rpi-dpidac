@@ -290,8 +290,8 @@ static int dpidac_attach(struct drm_bridge *bridge, enum drm_bridge_attach_flags
         return ret;
     }
 
-    dpi->connector.interlace_allowed = 1;
-    dpi->connector.doublescan_allowed = 1;
+    dpi->connector.interlace_allowed = 0;
+    dpi->connector.doublescan_allowed = 0;
 
     drm_connector_attach_encoder(&dpi->connector,
                                  bridge->encoder);
