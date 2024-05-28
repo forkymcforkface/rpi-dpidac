@@ -1,38 +1,36 @@
-# System requirements
+# Build instructions Raspbian 32-bit
 
-Both the overlay and the bridge were tested in the following environment:
-* Raspberry Pi OS Lite
-* Release date: October 10th 2023
-* Last updated: March 15th 2024
-* System: 64-bit
-* Kernel version: 6.6
-* Debian version: 12 (bookworm)
-* Raspberry Pi: models 3B/B+, 4B and 5B
+## dtbo
 
-# Build instructions
+`dtc -@ -O dtb -o vc4-vga666-overlay.dtbo vc4-vga666-overlay.dts`
 
-1. Clone Repo
-```git clone https://github.com/forkymcforkface/rpi-dpidac && cd rpi-dpidac```
-2. Install Kernel Headers
-```apt install raspberrypi-kernel-headers```
-3. Compile the overlay and kernel module
-```make```
-4. Install the overlay and kernel module
-```make install```
+## rpi-dipac
+
+1. Install Kernel Headers  
+`sudo apt install raspberrypi-kernel-headers`
+2. Compile drm bridge (do not use sudo)  
+`make -f Makefile.cross ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- KERNELDIR=/lib/modules/$(uname -r)/build`
+3. Copy .ko file into system dir  
+`sudo cp rpi-dpidac.ko /usr/lib/modules/$(uname -r)/kernel/drivers/gpu/drm/bridge`  
+NOTE: default /boot/timings.txt path is not mounted when module tries to read the same so changed path to /home/pi/RGB-Pi/data/system.dat
+4. Rebuild module dependency list  
+`sudo depmod`
+5. Add rpi-dpidac module to /etc/modules-load.d/modules.conf or /etc/modules.conf  
+`rpi-dpidac`
 
 ## Misc
 
-* Check if kernel module is loaded
-```lsmod | grep rpi_dpidac```
-* Display module info
-```modinfo rpi-dpidac```
-* Load module manually
-```modprobe rpi-dpidac```
+* Check if kernel module is loaded  
+`lsmod | grep rpi_dpidac`
+* Display module info  
+`modinfo rpi-dpidac`
+* Load module manually  
+`modprobe rpi-dpidac`
 or
-```insmod /usr/lib/modules/$(uname -r)/extra/rpi-dpidac.ko.xz```
-* Unload module manually
-```modprobe -r rpi-dpidac```
-* Get kernel bridge message status
-```less /var/log/messages | grep RPI-DPIDAC```
+`insmod /usr/lib/modules/$(uname -r)/kernel/drivers/gpu/drm/bridge/rpi-dpidac.ko`
+* Unload module manually  
+`modprobe -r rpi-dpidac`
+* Get kernel boot messages to check info  
+`sudo less /var/log/messages | grep RPI-DPIDAC`
 or
-```dmesg | grep RPI-DPIDAC```
+`dmesg | grep RPI-DPIDAC`
