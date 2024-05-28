@@ -1,4 +1,4 @@
-# Build instructions Raspbian 32-bit
+# Build instructions Bookworm 64bit
 
 ## dtbo
 
@@ -9,7 +9,8 @@
 1. Install Kernel Headers  
 `sudo apt install raspberrypi-kernel-headers`
 2. Compile drm bridge (do not use sudo)  
-`make -f Makefile.cross ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- KERNELDIR=/lib/modules/$(uname -r)/build`
+`make`
+`make modules_install`
 3. Copy .ko file into system dir  
 `sudo cp rpi-dpidac.ko /usr/lib/modules/$(uname -r)/kernel/drivers/gpu/drm/bridge`  
 NOTE: default /boot/timings.txt path is not mounted when module tries to read the same so changed path to /home/pi/RGB-Pi/data/system.dat
@@ -17,6 +18,7 @@ NOTE: default /boot/timings.txt path is not mounted when module tries to read th
 `sudo depmod`
 5. Add rpi-dpidac module to /etc/modules-load.d/modules.conf or /etc/modules.conf  
 `rpi-dpidac`
+6. Copy dtbo to /boot/firmware/overlays
 
 ## Misc
 
