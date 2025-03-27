@@ -8,23 +8,30 @@ else
 	else
 		ARCH         ?= arm
 	endif
-	INSTALL_MOD_PATH ?=
+	INSTALL_MOD_PATH ?= 
 endif
 
 all:
 	${MAKE} ARCH="${ARCH}" -C ${KERNELDIR} M="${MODULE_DIR}" modules
 	dtc -@ -O dtb -o vc4-kms-dpi-custom.dtbo vc4-kms-dpi-custom.dts
 
-install:
+install: check_and_uninstall
 	${MAKE} ARCH="${ARCH}" INSTALL_MOD_PATH="${INSTALL_MOD_PATH}" -C ${KERNELDIR} M="${MODULE_DIR}" modules_install
 	depmod
 	cp vc4-kms-dpi-custom.dtbo /boot/firmware/overlays
+	@if ! grep -q "dtoverlay=vc4-kms-dpi-custom" /boot/firmware/config.txt; then \
+		echo "dtoverlay=vc4-kms-dpi-custom" | sudo tee -a /boot/firmware/config.txt; \
 	fi
-	@echo "dtoverlay=vc4-kms-dpi-custom" | sudo tee -a /boot/firmware/config.txt
 	@if ! grep -q "rpi-dpidac" /etc/modules-load.d/modules.conf; then \
 		echo "rpi-dpidac" | sudo tee -a /etc/modules-load.d/modules.conf; \
 	fi
 	@modprobe rpi-dpidac
+
+check_and_uninstall:
+	@if lsmod | grep -q "rpi-dpidac"; then \
+		echo "Driver 'rpi-dpidac' already installed. Running uninstall before install..."; \
+		${MAKE} uninstall; \
+	fi
 
 uninstall:
 	rm -f ${INSTALL_MOD_PATH}/lib/modules/$(shell uname -r)/extra/rpi-dpidac.ko*
