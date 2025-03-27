@@ -4,6 +4,7 @@
  * Hugh Cole-Baker <sigmaris@gmail.com>
  *  * cpasjuste
  * rTomas (RTA) <ruben.tomas.alonso@gmail.com>
+ * Kevin *forkymcforkface
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -266,7 +267,7 @@ static const struct drm_connector_funcs dpidac_con_funcs = {
 
 static int dpidac_attach(struct drm_bridge *bridge, enum drm_bridge_attach_flags flags) {
     struct dpidac *dpi = drm_bridge_to_dpidac(bridge);
-    u32 bus_format = MEDIA_BUS_FMT_RGB666_1X24_CPADHI;
+    u32 bus_format = MEDIA_BUS_FMT_RGB888_1X24;
     int ret;
 
     if (!bridge->encoder) {
