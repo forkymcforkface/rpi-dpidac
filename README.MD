@@ -3,9 +3,9 @@
 Both the overlay and the bridge were tested in the following environment:
 * Raspberry Pi OS Lite
 * Release date: October 10th 2023
-* Last updated: March 15th 2024
+* Last updated: July 7th 2025
 * System: 64-bit
-* Kernel version: 6.6
+* Kernel version: 6.12
 * Debian version: 12 (bookworm)
 * Raspberry Pi: models 3B/B+, 4B and 5B
 
