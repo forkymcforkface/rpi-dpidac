@@ -18,24 +18,23 @@ all:
 install:
 	${MAKE} ARCH="${ARCH}" INSTALL_MOD_PATH="${INSTALL_MOD_PATH}" -C ${KERNELDIR} M="${MODULE_DIR}" modules_install
 	depmod
-	cp vc4-kms-dpi-custom.dtbo /boot/firmware/overlays
+	@if [ -d /boot/firmware/overlays ]; then \
+		cp vc4-kms-dpi-custom.dtbo /boot/firmware/overlays; \
 	fi
-	@echo "dtoverlay=vc4-kms-dpi-custom" | sudo tee -a /boot/firmware/config.txt
-	@if ! grep -q "rpi-dpidac" /etc/modules-load.d/modules.conf; then \
-		echo "rpi-dpidac" | sudo tee -a /etc/modules-load.d/modules.conf; \
+	@if ! grep -q '^dtoverlay=vc4-kms-dpi-custom' /boot/firmware/config.txt 2>/dev/null; then \
+		echo "dtoverlay=vc4-kms-dpi-custom" | sudo tee -a /boot/firmware/config.txt >/dev/null; \
 	fi
-	@modprobe rpi-dpidac
+	@if ! grep -q '^rpi-dpidac' /etc/modules-load.d/modules.conf 2>/dev/null; then \
+		echo "rpi-dpidac" | sudo tee -a /etc/modules-load.d/modules.conf >/dev/null; \
+	fi
+	-@modprobe rpi-dpidac || true
 
 uninstall:
-	rm -f ${INSTALL_MOD_PATH}/lib/modules/$(shell uname -r)/extra/rpi-dpidac.ko*
+	-@find ${INSTALL_MOD_PATH}/lib/modules/$(shell uname -r) -name 'rpi-dpidac.ko*' -delete || true
 	depmod
 	@if [ -f /boot/firmware/overlays/vc4-kms-dpi-custom.dtbo ]; then \
 		echo "rm /boot/firmware/overlays/vc4-kms-dpi-custom.dtbo"; \
 		rm /boot/firmware/overlays/vc4-kms-dpi-custom.dtbo; \
-	fi
-	@if [ -f /boot/firmware/timings.txt ]; then \
-		echo "rm /boot/firmware/timings.txt"; \
-		rm /boot/firmware/timings.txt; \
 	fi
 
 clean:
