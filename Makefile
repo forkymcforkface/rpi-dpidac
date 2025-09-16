@@ -3,37 +3,43 @@ ifneq (${KERNELRELEASE},)
 else
 	KERNELDIR        ?= /lib/modules/$(shell uname -r)/build
 	MODULE_DIR       ?= $(shell pwd)
-	ARCH             ?= $(shell uname -i)
-	CROSS_COMPILE    ?=
-	INSTALL_MOD_PATH ?= /
-	CONFIG_FILE      ?= /boot/firmware/config.txt
-	MODULES_CONF     ?= /etc/modules-load.d/modules.conf
-	OVERLAYS_DIR     ?= /boot/firmware/overlays
+	ifeq ($(shell dpkg-architecture -qDEB_HOST_ARCH),arm64)
+		ARCH         ?= arm64
+	else
+		ARCH         ?= arm
+	endif
+	INSTALL_MOD_PATH ?=
 endif
 
-all: modules
+all:
+	${MAKE} ARCH="${ARCH}" -C ${KERNELDIR} M="${MODULE_DIR}" modules
+	dtc -@ -O dtb -o vc4-kms-dpi-custom.dtbo vc4-kms-dpi-custom.dts
 
-modules:
-	${MAKE} ARCH="${ARCH}" CROSS_COMPILE="${CROSS_COMPILE}" -C ${KERNELDIR} M="${MODULE_DIR}" modules
-
-modules_install:
-	${MAKE} ARCH="${ARCH}" CROSS_COMPILE="${CROSS_COMPILE}" INSTALL_MOD_PATH="${INSTALL_MOD_PATH}" -C ${KERNELDIR} M="${MODULE_DIR}" modules_install
-	@echo "dtoverlay=vc4-vga666,mode6" >> ${CONFIG_FILE}
-	@echo "dtoverlay=audremap,pins_18_19" >> ${CONFIG_FILE}
-	@grep -qxF 'i2c-dev' ${MODULES_CONF} || echo 'i2c-dev' >> ${MODULES_CONF}
-	@grep -qxF 'rpi-dpidac' ${MODULES_CONF} || echo 'rpi-dpidac' >> ${MODULES_CONF}
-	@cp vc4-vga666.dtbo ${OVERLAYS_DIR}
-
-clean:
-	rm -f *.o *.ko *.mod.c .*.o .*.ko .*.mod.c *.mod .*.cmd *~
-	rm -f Module.symvers Module.markers modules.order
-	rm -rf .tmp_versions
+install:
+	${MAKE} ARCH="${ARCH}" INSTALL_MOD_PATH="${INSTALL_MOD_PATH}" -C ${KERNELDIR} M="${MODULE_DIR}" modules_install
+	depmod
+	@if [ -d /boot/firmware/overlays ]; then \
+		cp vc4-kms-dpi-custom.dtbo /boot/firmware/overlays; \
+	fi
+	@if ! grep -q '^dtoverlay=vc4-kms-dpi-custom' /boot/firmware/config.txt 2>/dev/null; then \
+		echo "dtoverlay=vc4-kms-dpi-custom" | sudo tee -a /boot/firmware/config.txt >/dev/null; \
+	fi
+	@if ! grep -q '^rpi-dpidac' /etc/modules-load.d/modules.conf 2>/dev/null; then \
+		echo "rpi-dpidac" | sudo tee -a /etc/modules-load.d/modules.conf >/dev/null; \
+	fi
+	-@modprobe rpi-dpidac || true
 
 uninstall:
-	rm -f ${INSTALL_MOD_PATH}/lib/modules/$(shell uname -r)/kernel/drivers/${MODULE_DIR}/rpi-dpidac.ko
-	depmod -a
-	sed -i 's/^dtoverlay=vc4-vga666,mode6/#dtoverlay=vc4-vga666,mode6/' ${CONFIG_FILE}
-	sed -i 's/^dtoverlay=audremap,pins_18_19/#dtoverlay=audremap,pins_18_19/' ${CONFIG_FILE}
-	sed -i '/^i2c-dev$/d' ${MODULES_CONF}
-	sed -i '/^rpi-dpidac$/d' ${MODULES_CONF}
-	rm -f ${OVERLAYS_DIR}/vc4-vga666.dtbo
+	-@find ${INSTALL_MOD_PATH}/lib/modules/$(shell uname -r) -name 'rpi-dpidac.ko*' -delete || true
+	depmod
+	@if [ -f /boot/firmware/overlays/vc4-kms-dpi-custom.dtbo ]; then \
+		echo "rm /boot/firmware/overlays/vc4-kms-dpi-custom.dtbo"; \
+		rm /boot/firmware/overlays/vc4-kms-dpi-custom.dtbo; \
+	fi
+
+clean:
+	${MAKE} -C ${KERNELDIR} M="${MODULE_DIR}" clean
+	@if [ -f vc4-kms-dpi-custom.dtbo ]; then \
+		echo "rm vc4-kms-dpi-custom.dtbo"; \
+		rm vc4-kms-dpi-custom.dtbo; \
+	fi
