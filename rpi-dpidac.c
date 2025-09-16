@@ -107,6 +107,8 @@ static struct videomode modes[ModeCount] = {
     }
 };
 
+int dpidac_load_timings(struct drm_connector *connector);
+
 static struct drm_display_mode *dpidac_display_mode_from_timings(struct drm_connector *connector, const char *line) {
     int ret, hsync, vsync, interlace, ratio;
     struct drm_display_mode *mode = NULL;
@@ -322,13 +324,11 @@ static int dpidac_probe(struct platform_device *pdev) {
     return 0;
 }
 
-static int dpidac_remove(struct platform_device *pdev) {
+static void dpidac_remove(struct platform_device *pdev) {
     struct dpidac *dpi = platform_get_drvdata(pdev);
     drm_bridge_remove(&dpi->bridge);
 
     printk(KERN_INFO "[RPI-DPIDAC]: module removed\n");
-
-    return 0;
 }
 
 static const struct of_device_id dpidac_match[] = {
