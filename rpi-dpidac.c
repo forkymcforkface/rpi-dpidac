@@ -33,6 +33,8 @@
 static char read_buf[READ_SIZE_MAX];
 static const char *timings_path = "/opt/rgbpi/ui/data/timings.dat";
 
+int dpidac_load_timings(struct drm_connector *connector);
+
 static struct drm_display_mode *dpidac_display_mode_from_timings(struct drm_connector *connector, const char *line) {
     int ret, hsync, vsync, interlace, ratio;
     struct drm_display_mode *mode = NULL;
@@ -251,7 +253,7 @@ static int dpidac_probe(struct platform_device *pdev) {
     return 0;
 }
 
-static int dpidac_remove(struct platform_device *pdev) {
+static void dpidac_remove(struct platform_device *pdev) {
     struct dpidac *vga = platform_get_drvdata(pdev);
 
     if (vga->timings) {
@@ -260,7 +262,6 @@ static int dpidac_remove(struct platform_device *pdev) {
 
     drm_bridge_remove(&vga->bridge);
 
-    return 0;
 }
 
 static const struct of_device_id dpidac_match[] = {
